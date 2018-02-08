@@ -27,6 +27,7 @@
   - [Notification ID](#notification-id)
   - [Clicking Notification Does Not Bring App to Foreground](#clicking-notification-does-not-bring-app-to-foreground)
   - [Notification Channels](#notification-channels)
+  - [Auto Cancel](#auto-cancel)
 - [iOS Behaviour](#ios-behaviour)
   - [Sound](#sound-1)
   - [Background Notifications](#background-notifications-1)
@@ -1554,6 +1555,21 @@ Now when you send a push payload to the device you'll need to specify a channel:
 ```
 
 Failure to specify a channel in this case will prevent the NotificationManager from being able to deliver your notification.
+
+## Auto Cancel
+
+This option determines the behaviour of the notification once the body or an  action button has been clicked. Setting this option to `true` will automatically clear the notification, but setting this to `false` will leave the notification displayed after it has been clicked. The default value is `true` if the option is omitted.
+
+```javascript
+{
+    "registration_ids": ["my device id"],
+    "data": {
+    	"title": "Hello Bob!",
+    	"message": "Phonegap is awesome!",
+    	"autoCancel": false // This will cause the notification stay displayed even after being clicked
+    }
+}
+```
 
 # iOS Behaviour
 
