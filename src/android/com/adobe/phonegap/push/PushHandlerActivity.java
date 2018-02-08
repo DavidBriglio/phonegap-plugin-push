@@ -22,24 +22,29 @@ public class PushHandlerActivity extends Activity implements PushConstants {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         FCMService gcm = new FCMService();
-
+        
         Intent intent = getIntent();
+        Bundle extras = intent.getExtras();
 
-        int notId = intent.getExtras().getInt(NOT_ID, 0);
+        int notId = extras.getInt(NOT_ID, 0);
+        boolean autoCancel = extras.getBoolean(AUTO_CANCEL, true);
         Log.d(LOG_TAG, "not id = " + notId);
         gcm.setNotification(notId, "");
         super.onCreate(savedInstanceState);
         Log.v(LOG_TAG, "onCreate");
-        String callback = getIntent().getExtras().getString("callback");
+        String callback = extras.getString("callback");
         Log.d(LOG_TAG, "callback = " + callback);
-        boolean foreground = getIntent().getExtras().getBoolean("foreground", true);
-        boolean startOnBackground = getIntent().getExtras().getBoolean(START_IN_BACKGROUND, false);
-        boolean dismissed = getIntent().getExtras().getBoolean(DISMISSED, false);
+        boolean foreground = extras.getBoolean("foreground", true);
+        boolean startOnBackground = extras.getBoolean(START_IN_BACKGROUND, false);
+        boolean dismissed = extras.getBoolean(DISMISSED, false);
         Log.d(LOG_TAG, "dismissed = " + dismissed);
 
         if(!startOnBackground){
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            notificationManager.cancel(FCMService.getAppName(this), notId);
+            
+            if(autoCancel){
+                notificationManager.cancel(FCMService.getAppName(this), notId);
+            }
         }
 
         boolean isPushPluginActive = PushPlugin.isActive();

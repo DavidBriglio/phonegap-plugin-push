@@ -320,6 +320,7 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
     String title = extras.getString(TITLE);
     String contentAvailable = extras.getString(CONTENT_AVAILABLE);
     String forceStart = extras.getString(FORCE_START);
+    boolean autoCancel = Boolean.parseBoolean(extras.getString(AUTO_CANCEL, "true"));
     int badgeCount = extractBadgeCount(extras);
     if (badgeCount >= 0) {
       Log.d(LOG_TAG, "count =[" + badgeCount + "]");
@@ -330,6 +331,7 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
     Log.d(LOG_TAG, "title =[" + title + "]");
     Log.d(LOG_TAG, "contentAvailable =[" + contentAvailable + "]");
     Log.d(LOG_TAG, "forceStart =[" + forceStart + "]");
+    Log.d(LOG_TAG, "autoCancel =[" + autoCancel + "]");
 
     if ((message != null && message.length() != 0) || (title != null && title.length() != 0)) {
 
@@ -349,6 +351,7 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
       intent.putExtra(PUSH_BUNDLE, extras);
       intent.putExtra(START_IN_BACKGROUND, true);
       intent.putExtra(FOREGROUND, false);
+      intent.putExtra(AUTO_CANCEL, autoCancel);
       startActivity(intent);
     } else if ("1".equals(contentAvailable)) {
       Log.d(LOG_TAG, "app is not running and content available true");
@@ -362,12 +365,14 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
     String appName = getAppName(this);
     String packageName = context.getPackageName();
     Resources resources = context.getResources();
+    boolean autoCancel = Boolean.parseBoolean(extras.getString(AUTO_CANCEL, "true"));
 
     int notId = parseInt(NOT_ID, extras);
     Intent notificationIntent = new Intent(this, PushHandlerActivity.class);
     notificationIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
     notificationIntent.putExtra(PUSH_BUNDLE, extras);
     notificationIntent.putExtra(NOT_ID, notId);
+    notificationIntent.putExtra(AUTO_CANCEL, autoCancel);
 
     int requestCode = new Random().nextInt();
     PendingIntent contentIntent = PendingIntent.getActivity(this, requestCode, notificationIntent,
@@ -377,6 +382,7 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
     dismissedNotificationIntent.putExtra(PUSH_BUNDLE, extras);
     dismissedNotificationIntent.putExtra(NOT_ID, notId);
     dismissedNotificationIntent.putExtra(DISMISSED, true);
+    dismissedNotificationIntent.putExtra(AUTO_CANCEL, autoCancel);
     dismissedNotificationIntent.setAction(PUSH_DISMISSED);
 
     requestCode = new Random().nextInt();
@@ -409,7 +415,7 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
 
     mBuilder.setWhen(System.currentTimeMillis()).setContentTitle(fromHtml(extras.getString(TITLE)))
         .setTicker(fromHtml(extras.getString(TITLE))).setContentIntent(contentIntent).setDeleteIntent(deleteIntent)
-        .setAutoCancel(true);
+        .setAutoCancel(autoCancel);
 
     SharedPreferences prefs = context.getSharedPreferences(PushPlugin.COM_ADOBE_PHONEGAP_PUSH, Context.MODE_PRIVATE);
     String localIcon = prefs.getString(ICON, null);
@@ -497,7 +503,7 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
     setNotificationOngoing(extras, mBuilder);
 
     /*
-     * Notification count
+     * Notification visibility
      */
     setVisibility(context, extras, mBuilder);
 
@@ -509,17 +515,19 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
     mNotificationManager.notify(appName, notId, mBuilder.build());
   }
 
-  private void updateIntent(Intent intent, String callback, Bundle extras, boolean foreground, int notId) {
+  private void updateIntent(Intent intent, String callback, Bundle extras, boolean foreground, int notId, boolean autoCancel) {
     intent.putExtra(CALLBACK, callback);
     intent.putExtra(PUSH_BUNDLE, extras);
     intent.putExtra(FOREGROUND, foreground);
     intent.putExtra(NOT_ID, notId);
+    intent.putExtra(AUTO_CANCEL, autoCancel);
   }
 
   private void createActions(Bundle extras, NotificationCompat.Builder mBuilder, Resources resources,
       String packageName, int notId) {
     Log.d(LOG_TAG, "create actions: with in-line");
     String actions = extras.getString(ACTIONS);
+    boolean autoCancel = Boolean.parseBoolean(extras.getString(AUTO_CANCEL, "true"));
     if (actions != null) {
       try {
         JSONArray actionsArray = new JSONArray(actions);
@@ -546,7 +554,7 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
               intent = new Intent(this, BackgroundActionButtonHandler.class);
             }
 
-            updateIntent(intent, action.getString(CALLBACK), extras, foreground, notId);
+            updateIntent(intent, action.getString(CALLBACK), extras, foreground, notId, autoCancel);
 
             if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.M) {
               Log.d(LOG_TAG, "push activity for notId " + notId);
@@ -559,16 +567,16 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
             }
           } else if (foreground) {
             intent = new Intent(this, PushHandlerActivity.class);
-            updateIntent(intent, action.getString(CALLBACK), extras, foreground, notId);
+            updateIntent(intent, action.getString(CALLBACK), extras, foreground, notId, autoCancel);
             pIntent = PendingIntent.getActivity(this, uniquePendingIntentRequestCode, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
           } else {
             intent = new Intent(this, BackgroundActionButtonHandler.class);
-            updateIntent(intent, action.getString(CALLBACK), extras, foreground, notId);
+            updateIntent(intent, action.getString(CALLBACK), extras, foreground, notId, autoCancel);
             pIntent = PendingIntent.getBroadcast(this, uniquePendingIntentRequestCode, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
           }
-
+          
           NotificationCompat.Action.Builder actionBuilder = new NotificationCompat.Action.Builder(
               getImageId(resources, action.optString(ICON, ""), packageName), action.getString(TITLE), pIntent);
 
