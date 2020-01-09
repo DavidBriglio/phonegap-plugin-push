@@ -117,19 +117,19 @@ NSString *const pushPluginApplicationDidBecomeActiveNotification = @"pushPluginA
                 NSLog(@"Push Plugin notId handler");
                 [pushHandler.handlerObj setObject:safeHandler forKey:@"handler"];
             }
-            
+
             NSDictionary *userInfoMutable = [userInfo mutableCopy];
             [userInfoMutable setValue:@"false" forKey:@"wasTapped"];
             pushHandler.notificationMessage = userInfoMutable;
             pushHandler.isInline = NO;
             [pushHandler notificationReceived];
         }
-        
+
         if (silent != 1 || [[userInfo objectForKey:@"onTap"] boolValue] == YES) {
             NSLog(@"just put it in the shade");
             NSDictionary *userInfoMutable = [userInfo mutableCopy];
             [userInfoMutable setValue:@"true" forKey:@"wasTapped"];
-            
+
             //save it for later
             self.launchNotification = userInfoMutable;
 
@@ -137,11 +137,11 @@ NSString *const pushPluginApplicationDidBecomeActiveNotification = @"pushPluginA
         }
 
     } else {
-        NSLog(@"app active"); 
-        PushPlugin *pushHandler = [self getCommandInstance:@"PushNotification"]; 
-        pushHandler.notificationMessage = userInfo; 
-        pushHandler.isInline = YES; 
-        [pushHandler notificationReceived]; 
+        NSLog(@"app active");
+        PushPlugin *pushHandler = [self getCommandInstance:@"PushNotification"];
+        pushHandler.notificationMessage = userInfo;
+        pushHandler.isInline = YES;
+        [pushHandler notificationReceived];
         completionHandler(UIBackgroundFetchResultNoData);
     }
 }
@@ -156,6 +156,7 @@ NSString *const pushPluginApplicationDidBecomeActiveNotification = @"pushPluginA
             case UNAuthorizationStatusNotDetermined:
                 completionHandler(NO);
                 break;
+            case UNAuthorizationStatusProvisional:
             case UNAuthorizationStatusAuthorized:
                 completionHandler(YES);
                 break;
@@ -227,9 +228,12 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
         case UIApplicationStateInactive:
         {
             NSLog(@"coldstart");
-            self.launchNotification = response.notification.request.content.userInfo;
+            // Only set launchNotification if we do not have one (We may have set it in the background)
+            if (self.launchNotification == nil) {
+                self.launchNotification = response.notification.request.content.userInfo;
+            }
             self.coldstart = [NSNumber numberWithBool:YES];
-            break;
+            // Process as if we received the push in the background below
         }
         case UIApplicationStateBackground:
         {
