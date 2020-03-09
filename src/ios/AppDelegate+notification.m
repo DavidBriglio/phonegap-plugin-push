@@ -127,12 +127,6 @@ NSString *const pushPluginApplicationDidBecomeActiveNotification = @"pushPluginA
 
         if (silent != 1 || [[userInfo objectForKey:@"onTap"] boolValue] == YES) {
             NSLog(@"just put it in the shade");
-            NSDictionary *userInfoMutable = [userInfo mutableCopy];
-            [userInfoMutable setValue:@"true" forKey:@"wasTapped"];
-
-            //save it for later
-            self.launchNotification = userInfoMutable;
-
             completionHandler(UIBackgroundFetchResultNewData);
         }
 
@@ -213,13 +207,12 @@ didReceiveNotificationResponse:(UNNotificationResponse *)response
         }
         case UIApplicationStateInactive:
         {
-            NSLog(@"coldstart");
-            // Only set launchNotification if we do not have one (We may have set it in the background)
-            if (self.launchNotification == nil) {
-                self.launchNotification = response.notification.request.content.userInfo;
-            }
-            self.coldstart = [NSNumber numberWithBool:YES];
-            // Process as if we received the push in the background below
+            // Push clicks are triggering as state inactive
+            NSMutableDictionary *userInfoCopy = [response.notification.request.content.userInfo mutableCopy];
+            [userInfoCopy setValue:@"true" forKey:@"wasTapped"];
+            // Set the payload and wait for the app to open
+            self.launchNotification = userInfoCopy;
+            break;
         }
         case UIApplicationStateBackground:
         {
