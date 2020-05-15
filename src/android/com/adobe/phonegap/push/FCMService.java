@@ -444,14 +444,14 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
         mBuilder.setWhen(System.currentTimeMillis()).setContentTitle(fromHtml(extras.getString(TITLE)))
         .setTicker(fromHtml(extras.getString(TITLE))).setContentIntent(contentIntent).setDeleteIntent(deleteIntent);
 
-        SharedPreferences prefs = context.getSharedPreferences(PushPlugin.COM_ADOBE_PHONEGAP_PUSH, Context.MODE_PRIVATE);
-        String localIcon = prefs.getString(ICON, null);
-        String localIconColor = prefs.getString(ICON_COLOR, null);
-        boolean soundOption = prefs.getBoolean(SOUND, true);
-        boolean vibrateOption = prefs.getBoolean(VIBRATE, true);
-        Log.d(LOG_TAG, "stored icon=" + localIcon);
-        Log.d(LOG_TAG, "stored iconColor=" + localIconColor);
-        Log.d(LOG_TAG, "stored sound=" + soundOption);
+    SharedPreferences prefs = context.getSharedPreferences(PushPlugin.COM_ADOBE_PHONEGAP_PUSH, Context.MODE_PRIVATE);
+    String localIcon = prefs.getString(ICON, null);
+    String localIconColor = prefs.getString(ICON_COLOR, null);
+    boolean soundOption = prefs.getBoolean(SOUND, true) && extras.getString(SOUND, "true") != "false";
+    boolean vibrateOption = prefs.getBoolean(VIBRATE, true) && extras.getString(VIBRATE, "true") != "false";
+    Log.d(LOG_TAG, "stored icon=" + localIcon);
+    Log.d(LOG_TAG, "stored iconColor=" + localIconColor);
+    Log.d(LOG_TAG, "stored sound=" + soundOption);
         Log.d(LOG_TAG, "stored vibrate=" + vibrateOption);
 
         /*
@@ -592,22 +592,17 @@ public class FCMService extends FirebaseMessagingService implements PushConstant
                                 PendingIntent.FLAG_ONE_SHOT);
                         } else {
                             Log.d(LOG_TAG, "push receiver for notId " + notId);
-                            pIntent = PendingIntent.getBroadcast(context, uniquePendingIntentRequestCode, intent,
-                                PendingIntent.FLAG_ONE_SHOT);
-                        }
-                    } else if (foreground) {
-                        intent = new Intent(context, PushHandlerActivity.class);
-                        updateIntent(intent, action.getString(CALLBACK), extras, foreground, notId);
-                        pIntent = PendingIntent.getActivity(context, uniquePendingIntentRequestCode, intent,
-                            PendingIntent.FLAG_UPDATE_CURRENT);
-                    } else {
-                        intent = new Intent(context, BackgroundActionButtonHandler.class);
-                        updateIntent(intent, action.getString(CALLBACK), extras, foreground, notId);
-                        pIntent = PendingIntent.getBroadcast(context, uniquePendingIntentRequestCode, intent,
-                            PendingIntent.FLAG_UPDATE_CURRENT);
-                    }
-        
-                    NotificationCompat.Action.Builder actionBuilder = new NotificationCompat.Action.Builder(
+              pIntent = PendingIntent.getBroadcast(context, uniquePendingIntentRequestCode, intent,
+                  PendingIntent.FLAG_ONE_SHOT);
+            }
+          } else {
+            intent = new Intent(context, PushHandlerActivity.class);
+            updateIntent(intent, action.getString(CALLBACK), extras, foreground, notId);
+            pIntent = PendingIntent.getActivity(context, uniquePendingIntentRequestCode, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+          }
+
+          NotificationCompat.Action.Builder actionBuilder = new NotificationCompat.Action.Builder(
                         getImageId(resources, action.optString(ICON, ""), packageName), action.getString(TITLE), pIntent);
         
                     RemoteInput remoteInput = null;
