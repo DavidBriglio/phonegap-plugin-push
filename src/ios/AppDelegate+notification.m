@@ -123,9 +123,7 @@ NSString *const pushPluginApplicationDidBecomeActiveNotification = @"pushPluginA
             pushHandler.notificationMessage = userInfoMutable;
             pushHandler.isInline = NO;
             [pushHandler notificationReceived];
-        }
-
-        if (silent != 1 || [[userInfo objectForKey:@"onTap"] boolValue] == YES) {
+        } else {
             NSLog(@"just put it in the shade");
             completionHandler(UIBackgroundFetchResultNewData);
         }
